@@ -1,0 +1,32 @@
+name: Deploy Static Site
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::538043301377:role/github-actions-static-site-deploy
+          aws-region: us-east-1
+
+      - name: Sync site to S3
+        run: aws s3 sync src/ s3://billy-joe-portfolio-site-2026 --delete
+
+      - name: Invalidate CloudFront cache
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id d12a77fy8kyrqe \
+            --paths "/*"
